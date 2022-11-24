@@ -207,7 +207,7 @@ def main():
     # но такое себе честно говоря, скрипт работает 1 год и мы будем получать
     # историю за весь год, но зачем нам это ? я думаю надо сделать отдельную
     # функцию получения времени, текущие время - sleeptime
-    timestamp = 1667676627  # int(time.time())
+    timestamp = int(time.time())
     while True:
         try:
             request_query = get_api_answer(timestamp=timestamp)
