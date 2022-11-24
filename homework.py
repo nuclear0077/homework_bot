@@ -90,9 +90,8 @@ def send_message(bot, message):
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except TelegramError as error:
         logger.exception(error)
-    logger.debug(
-        f'Бот отправил сообщение: {message} \nпользователю с id: {TELEGRAM_CHAT_ID}'
-    )
+    logger.debug(f"""Бот отправил сообщение: {message}
+    \nпользователю с id: {TELEGRAM_CHAT_ID}""")
 
 
 # точно помню, что в datetime библиотеке, можно вычитать даты и получать
@@ -119,7 +118,10 @@ def get_api_answer(timestamp):
     except requests.RequestException as error:
         logger.exception(error)
     if not homework_statuses.status_code == HTTPStatus.OK:
-        message = f'Был полочен неожиданный ответ \n Статус ответа: {homework_statuses.status_code}, \n {homework_statuses.json()} \n ENDPOINT:{ENDPOINT}, params:{params}'
+        message = f"""Был полочен неожиданный ответ \n
+        Статус ответа: {homework_statuses.status_code},
+        \n {homework_statuses.json()}
+        \n ENDPOINT:{ENDPOINT}, params:{params}"""
         raise requests.RequestException.HTTPError(message)
     logger.debug(f'Ответ: {homework_statuses.json()}')
     return homework_statuses.json()
@@ -170,7 +172,8 @@ def parse_status(homework):
         homework_name = last_homework.get('homework_name')
         if homework_name is not None:
             logger.debug(f'Текущиие имя работы {homework_name}')
-            return f'Изменился статус проверки работы "{homework_name}". {verdict}'
+            return f"""Изменился статус проверки работы
+            "{homework_name}". {verdict}"""
         raise KeyError('В домашней работе нет ключа homework_name')
 
 
