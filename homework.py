@@ -120,8 +120,7 @@ def get_api_answer(timestamp):
     if not homework_statuses.status_code == HTTPStatus.OK:
         message = f"""Был полочен неожиданный ответ \n
         Статус ответа: {homework_statuses.status_code},
-        \n {homework_statuses.json()}
-        \n ENDPOINT:{ENDPOINT}, params:{params}"""
+        \n {homework_statuses.json()}\n ENDPOINT:{ENDPOINT}, params:{params}"""
         raise requests.RequestException.HTTPError(message)
     logger.debug(f'Ответ: {homework_statuses.json()}')
     return homework_statuses.json()
@@ -172,8 +171,9 @@ def parse_status(homework):
         homework_name = last_homework.get('homework_name')
         if homework_name is not None:
             logger.debug(f'Текущиие имя работы {homework_name}')
-            return f"""Изменился статус проверки работы
-            "{homework_name}". {verdict}"""
+            message = f"""Изменился статус проверки работы "{homework_name}".
+             {verdict}"""
+            return message
         raise KeyError('В домашней работе нет ключа homework_name')
 
 
