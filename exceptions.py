@@ -1,6 +1,6 @@
-class CriticalError(BaseException):
+class UnexpectedAnswer(Exception):
     pass
 
 
-class StatusNotFound(BaseException):
+class NotHomeWork(Exception):
     pass

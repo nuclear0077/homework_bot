@@ -42,19 +42,3 @@ repos:
           - flake8-variables-names
         # путь до каталога с конфигом
         args: ['--config=setup.cfg']
-  - repo: https://github.com/rtts/djhtml
-    rev: v1.5.2
-    hooks:
-      - id: djhtml
-        # Indent only HTML files in template directories
-        files: .*/templates/.*\.html$
-        args: [-i, -t, '2']
-  - repo: local
-    hooks:
-      -   id: migrations
-          name: 'Checking migrations'
-          entry: python yatube/manage.py
-          language: system
-          args: [makemigrations, --dry-run, --check]
-          pass_filenames: false
-          require_serial: true
