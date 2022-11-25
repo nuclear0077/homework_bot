@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 from dotenv import load_dotenv
 
@@ -19,6 +19,8 @@ def set_logging():
     logging.basicConfig(
         level=logging.DEBUG,
         filename='my_bot.log',
-        format=('%(asctime)s [%(levelname)s] | '
-                '(%(filename)s).%(funcName)s:%(lineno)d | %(message)s'),
+        format=(
+            '%(asctime)s [%(levelname)s] | '
+            '(%(filename)s).%(funcName)s:%(lineno)d | %(message)s'
+        ),
     )

@@ -1,5 +1,5 @@
-import sys
 import logging
+import sys
 import time
 from http import HTTPStatus
 
@@ -13,9 +13,10 @@ from config import (
     RETRY_PERIOD,
     TELEGRAM_CHAT_ID,
     TELEGRAM_TOKEN,
-    set_logging
+    set_logging,
 )
-from exceptions import UnexpectedAnswer, NotHomeWork
+from exceptions import NotHomeWork, UnexpectedAnswer
+
 # а если так?
 set_logging()
 logger = logging.getLogger(__name__)
@@ -74,8 +75,10 @@ def send_message(bot, message):
     except telegram.TelegramError as error:
         logger.exception(error)
     else:
-        logger.debug(f'Бот отправил сообщение: {message}'
-                     f'/nпользователю с id: {TELEGRAM_CHAT_ID}')
+        logger.debug(
+            f'Бот отправил сообщение: {message}'
+            f'/nпользователю с id: {TELEGRAM_CHAT_ID}'
+        )
 
 
 # точно помню, что в datetime библиотеке, можно вычитать даты и получать
