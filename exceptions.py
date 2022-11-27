@@ -1,6 +1,14 @@
-class UnexpectedAnswer(Exception):
+class MyExceptions(Exception):
     pass
 
 
-class NotHomeWork(Exception):
+class UnexpectedAnswer(MyExceptions):
+    pass
+
+
+class NotHomeWork(MyExceptions):
+    pass
+
+
+class WrongAnswer(MyExceptions):
     pass

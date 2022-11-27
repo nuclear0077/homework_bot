@@ -15,10 +15,8 @@ from config import (
     TELEGRAM_TOKEN,
     set_logging,
 )
-from exceptions import NotHomeWork, UnexpectedAnswer
+from exceptions import NotHomeWork, UnexpectedAnswer, WrongAnswer
 
-# а если так?
-set_logging()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(stream=None)
@@ -29,22 +27,6 @@ HOMEWORK_VERDICTS = {
     'reviewing': 'Работа взята на проверку ревьюером.',
     'rejected': 'Работа проверена: у ревьюера есть замечания.',
 }
-
-
-# хочу уточнить вопрос, я правильно понимаю исключения которые могут
-# возникнуть когда мы обрадаемся к файлу, сервису либо к другому
-# источнику взаимодействия мы данные запросы обрабатываем
-# прямо в функции? в конце ловить все исключения плохой тон?
-# еще вопрос я создавал свои исключения, но тесты перестали проходить,
-# как определяется когда нужно использовать базовые или свои ?
-# например у меня было 2 исключения
-# 1 - CriticalError критическая ошибка ( когда например нет токена в ENV )
-# 2 - StatusNotFound у нас не существует статуса в словаре
-# пришлось убрать из за тестов.
-# Вопрос по поводу логирования, я кидаю исключения и записываю их в лог в самом
-# конце блока когда идет обработка всех exceptions, это правильно? или лучше
-# перед тем как кинуть залогировать сообщение с нужным статусом ?
-# просто получается некое дублирование
 
 
 def check_tokens():
@@ -60,7 +42,7 @@ def check_tokens():
         logger.debug('Все токены успешно получены')
         return None
     logger.critical('Приостанавливаем программу')
-    sys.exit()
+    sys.exit('Не найден токен')
 
 
 def send_message(bot, message):
@@ -72,17 +54,19 @@ def send_message(bot, message):
     """
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+    except telegram.error.NetworkError as error:
+        logger.error('сервер телеграм недоступен')
+        logger.exception(error)
     except telegram.TelegramError as error:
+        logger.error('ошибка отправки сообщений в телеграм')
         logger.exception(error)
     else:
         logger.debug(
             f'Бот отправил сообщение: {message}'
-            f'/nпользователю с id: {TELEGRAM_CHAT_ID}'
+            f'\nпользователю с id: {TELEGRAM_CHAT_ID}'
         )
 
 
-# точно помню, что в datetime библиотеке, можно вычитать даты и получать
-# в формате timedelta, вычислим тут просто от текущей даты - 600 сек
 def get_api_answer(timestamp):
     """Функция для отправки запроса к API YandexPracticum.
 
@@ -94,20 +78,23 @@ def get_api_answer(timestamp):
         CriticalError: ошибка когда был получен любой ответ со стутусом != 200
     """
     params = {'from_date': timestamp}
-    logger.debug(f'Формируем запрос к {ENDPOINT} Params: {params}')
     try:
         homework_statuses = requests.get(
             ENDPOINT,
             headers=HEADERS,
             params=params,
         )
+        if not homework_statuses.status_code == HTTPStatus.OK:
+            message = ('Был полочен неожиданный ответ'
+                       f' Статус ответа: {homework_statuses.status_code},'
+                       f'\n ENDPOINT:{ENDPOINT}, params:{params}')
+            raise requests.exceptions.HTTPError(message)
+    except requests.exceptions.HTTPError as error:
+        logger.exception(error)
+        raise UnexpectedAnswer(error) from error
     except requests.RequestException as error:
         logger.exception(error)
-    if not homework_statuses.status_code == HTTPStatus.OK:
-        message = 'Был полочен неожиданный ответ'
-        f'Статус ответа: {homework_statuses.status_code},'
-        f'{homework_statuses.json()}\n ENDPOINT:{ENDPOINT}, params:{params}'
-        raise requests.RequestException(message)
+        raise WrongAnswer(error) from error
     logger.debug('Получен ответ')
     return homework_statuses.json()
 
@@ -126,13 +113,13 @@ def check_response(response):
     """
     if not isinstance(response, dict):
         raise TypeError('Неверный формат данных, ожидаем словарь')
+    if response.get('homeworks') is None:
+        raise KeyError('В ответе API нет ключа homeworks')
     homeworks = response.get('homeworks')
     if not isinstance(homeworks, list):
         raise TypeError('Неверный формат homeworks, ожидаем список')
     if not len(homeworks) != 0:
         raise NotHomeWork('Нет домашней работы')
-    if homeworks is None:
-        raise KeyError('В ответе API нет ключа домашней работы')
     return homeworks[0]
 
 
@@ -163,8 +150,6 @@ def parse_status(homework):
     return message
 
 
-# :TODO  вместо sleep можно использовать https://pypi.org/project/aioschedule/
-# или https://schedule.readthedocs.io/en/stable/
 def main():
     """Основная функция для запуска бота.
 
@@ -185,14 +170,6 @@ def main():
     check_tokens()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     previous_exception = None
-    # изначально timestamp был в цилке, далее каждый круг цикла обновлял
-    # информацию о времени и вычитаем 10 минут, получаем актуально информацию
-    # но с вычитаением ловлю ошибку на pytest и тогда смысла ставить данный
-    # блок в цикл нет, так как интервал будет секунда )
-    # получается сейчас интервал, текущие время - время работы программы,
-    # но такое себе честно говоря, скрипт работает 1 год и мы будем получать
-    # историю за весь год, но зачем нам это ? я думаю надо сделать отдельную
-    # функцию получения времени, текущие время - sleeptime
     timestamp = int(time.time())
     while True:
         try:
@@ -202,12 +179,6 @@ def main():
                 get_message = parse_status(response)
                 send_message(bot=bot, message=get_message)
             previous_exception = None
-        except requests.RequestException as error:
-            # но в логах не видно всю цепочку (
-            logger.exception(error)
-            previous_exception = error
-            send_message(bot=bot, message=str(error))
-            raise UnexpectedAnswer(error) from error
         except Exception as error:
             if str(previous_exception) != str(error):
                 send_message(bot=bot, message=str(error))
@@ -218,4 +189,5 @@ def main():
 
 
 if __name__ == '__main__':
+    set_logging()
     main()
