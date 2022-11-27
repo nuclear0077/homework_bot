@@ -1,14 +1,15 @@
-class MyExceptions(Exception):
+# кстати поковырял RequestException там такой же принцип!) 
+class MyBotException(Exception):
     pass
 
 
-class UnexpectedAnswer(MyExceptions):
+class UnexpectedAnswer(MyBotException):
     pass
 
 
-class NotHomeWork(MyExceptions):
+class NotHomeWork(MyBotException):
     pass
 
 
-class WrongAnswer(MyExceptions):
+class WrongAnswer(MyBotException):
     pass
