@@ -1,4 +1,4 @@
-# кстати поковырял RequestException там такой же принцип!) 
+# кстати поковырял RequestException там такой же принцип!)
 class MyBotException(Exception):
     pass
 
