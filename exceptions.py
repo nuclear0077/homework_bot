@@ -1,4 +1,3 @@
-# кстати поковырял RequestException там такой же принцип!)
 class MyBotException(Exception):
     pass
 
@@ -12,4 +11,8 @@ class NotHomeWork(MyBotException):
 
 
 class WrongAnswer(MyBotException):
+    pass
+
+
+class NotForSendingError(MyBotException):
     pass

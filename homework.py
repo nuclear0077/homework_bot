@@ -15,11 +15,16 @@ from config import (
     TELEGRAM_TOKEN,
     set_logging,
 )
-from exceptions import NotHomeWork, UnexpectedAnswer, WrongAnswer
+from exceptions import (
+    NotHomeWork,
+    UnexpectedAnswer,
+    WrongAnswer,
+    NotForSendingError
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(stream=None)
+handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(handler)
 
 HOMEWORK_VERDICTS = {
@@ -54,12 +59,11 @@ def send_message(bot, message):
     """
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    except telegram.error.NetworkError as error:
-        logger.error('сервер телеграм недоступен')
-        logger.exception(error)
+    # except telegram.error.NetworkError as error:
+    #     raise NotForSendingError(error) from error
     except telegram.TelegramError as error:
-        logger.error('ошибка отправки сообщений в телеграм')
-        logger.exception(error)
+        logger.error('Ошибка при отправке сообщения в телеграм')
+        raise NotForSendingError(error) from error
     else:
         logger.debug(
             f'Бот отправил сообщение: {message}'
@@ -175,10 +179,12 @@ def main():
         try:
             request_query = get_api_answer(timestamp=timestamp)
             response = check_response(request_query)
-            if response is not None and response != []:
+            if response:
                 get_message = parse_status(response)
                 send_message(bot=bot, message=get_message)
             previous_exception = None
+        except NotForSendingError as error:
+            logger.exception(error)
         except Exception as error:
             if str(previous_exception) != str(error):
                 send_message(bot=bot, message=str(error))
