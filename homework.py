@@ -59,8 +59,6 @@ def send_message(bot, message):
     """
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    # except telegram.error.NetworkError as error:
-    #     raise NotForSendingError(error) from error
     except telegram.TelegramError as error:
         logger.error('Ошибка при отправке сообщения в телеграм')
         raise NotForSendingError(error) from error
